@@ -17,4 +17,9 @@ class App:
         pyxel.blt(61, 66, 0, 0, 0, 38, 16)
 
 
-App()
+def main():
+    App()
+
+
+if __name__ == "__main__":
+    main()
