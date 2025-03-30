@@ -30,8 +30,7 @@ PADDING_SIZE = 3
 
 class App:
     def __init__(self):
-        pyxel.init(160, 120, title="Hello Pyxel")
-        pyxel.load("assets/card.pyxres")
+        basic_load()
         self.player1 = WarDeck()
         self.player2 = WarDeck()
         self.war_game = WarGame(self.player1, self.player2)
@@ -86,6 +85,11 @@ def draw_card(player: int, offset: int, card: CardValue, padding=0):
     cardx, cardy = VALUE_TO_BITMAP_LOCATION[card]
     pyxel.blt(player_start_x + offset * OFFSET_SIZE, player_start_y, 0,
               cardx * CARD_ICON_SIZE + padding, cardy * CARD_ICON_SIZE, *size)
+
+
+def basic_load():
+    pyxel.init(160, 120, title="Hello Pyxel")
+    pyxel.load("assets/card.pyxres")
 
 
 def main():

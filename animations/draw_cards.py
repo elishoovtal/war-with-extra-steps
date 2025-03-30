@@ -1,11 +1,10 @@
 import pyxel
 
-from animation import Animation, test_animation
+from animation import Animation, DurationFrameMap, FrameMap, test_animation
 from war_deck import CardValue
 
 CARD_ICON_SIZE = 16
-CARD_ICON_PADDING = 3
-SHUFFLE_EXTEND_OFFSET = 4
+SHUFFLE_EXTEND_OFFSET = 6
 VALUE_TO_BITMAP_LOCATION = {
     CardValue.A: (0, 0),
     CardValue.K: (1, 0),
@@ -31,32 +30,42 @@ def draw_card(location: tuple[int, int], card: CardValue, padding=0):
               cardx * CARD_ICON_SIZE + padding, cardy * CARD_ICON_SIZE, CARD_ICON_SIZE, CARD_ICON_SIZE)
 
 
-class DeckAnimation:
-    def __init__(self, location: tuple[int, int]):
-        self.location = location
+class ShuffleAnimation(Animation):
+    def __init__(self, initial_location: tuple[int, int], repeat: bool = True, background: int | None = None):
+        super().__init__(initial_location, repeat)
+        self.x, self.y = initial_location
+        self.location = initial_location
+        self.background = background
 
-    def draw(self):
+    def neutral_state(self):
+        if self.background is not None:
+            pyxel.rect(self.x, self.y - SHUFFLE_EXTEND_OFFSET, CARD_ICON_SIZE,
+                       CARD_ICON_SIZE + SHUFFLE_EXTEND_OFFSET, self.background)
         draw_card(self.location, CardValue.CARD_BACK)
 
     def shuffle_extended_frame(self):
-        x, y = self.location
-        draw_card(self.location, CardValue.CARD_BACK, CARD_ICON_PADDING)
-        draw_card((x, y - SHUFFLE_EXTEND_OFFSET),
-                  CardValue.CARD_BACK, CARD_ICON_PADDING)
+        draw_card(self.location, CardValue.CARD_BACK)
+        draw_card((self.x, self.y - SHUFFLE_EXTEND_OFFSET),
+                  CardValue.CARD_BACK)
 
     def shuffle_switched_frame(self):
-        x, y = self.location
-        draw_card((x, y - SHUFFLE_EXTEND_OFFSET),
-                  CardValue.CARD_BACK, CARD_ICON_PADDING)
-        draw_card(self.location, CardValue.CARD_BACK, CARD_ICON_PADDING)
+        draw_card((self.x, self.y - SHUFFLE_EXTEND_OFFSET),
+                  CardValue.CARD_BACK)
+        draw_card(self.location, CardValue.CARD_BACK)
 
     @property
-    def shuffle_animation(self) -> Animation:
-        return Animation({0: self.draw,
-                          4: self.shuffle_extended_frame,
-                          8: self.shuffle_switched_frame,
-                          12: self.draw}, self.location)
+    def duration_frame_map(self) -> DurationFrameMap:
+        return {(0, 4): self.neutral_state,
+                (4, 10): self.shuffle_extended_frame,
+                (10, 16): self.shuffle_switched_frame,
+                (16, 22): self.shuffle_extended_frame,
+                (22, 28): self.shuffle_switched_frame,
+                (28, 30): self.neutral_state}
+
+    @property
+    def frame_map(self) -> FrameMap:
+        return self.flatten_frame_map(self.duration_frame_map)
 
 
 if __name__ == '__main__':
-    test_animation(DeckAnimation((10, 10)).shuffle_animation)
+    test_animation(ShuffleAnimation((10, 10), background=0))
