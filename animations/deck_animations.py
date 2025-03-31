@@ -1,3 +1,5 @@
+import functools
+
 import pyxel
 
 from animation import Animation, DurationFrameMap, FrameMap, test_animation
@@ -33,8 +35,6 @@ def draw_card(location: tuple[int, int], card: CardValue, padding=0):
 class ShuffleAnimation(Animation):
     def __init__(self, initial_location: tuple[int, int], repeat: bool = True, background: int | None = None):
         super().__init__(initial_location, repeat)
-        self.x, self.y = initial_location
-        self.location = initial_location
         self.background = background
 
     def neutral_state(self):
@@ -67,5 +67,39 @@ class ShuffleAnimation(Animation):
         return self.flatten_frame_map(self.duration_frame_map)
 
 
+class DrawAnimation(Animation):
+    def __init__(self, initial_location: tuple[int, int], repeat: bool = True, direction=(-1, 0), distance=5, background: int | None = None, final_card_value=CardValue.CARD_BACK):
+        super().__init__(initial_location, repeat)
+        self.background = background
+        self.direction = direction
+        self.distance = distance
+        self.final_card_value = final_card_value
+        self.direction_x, self.direction_y = self.direction
+        if self.direction_x < 0:
+            self.new_start_x = self.x + self.direction_x * self.distance
+        else:
+            self.new_start_x = self.x
+        if self.direction_y < 0:
+            self.new_start_y = self.y + self.direction_y * self.distance
+        else:
+            self.new_start_y = self.y
+        self.full_animation_size_x = CARD_ICON_SIZE + self.distance * abs(self.direction_x)
+        self.full_animation_size_y = CARD_ICON_SIZE + self.distance * abs(self.direction_y)
+    
+    def _distance_frame(self, distance, card_value: CardValue = CardValue.CARD_BACK):
+        if self.background is not None:
+            pyxel.rect(self.new_start_x, self.new_start_y, self.full_animation_size_x, self.full_animation_size_y, self.background)
+        draw_card((self.x, self.y), CardValue.CARD_BACK)
+        draw_card((self.x + self.direction_x * distance, self.y + self.direction_y * distance), card_value)
+
+    @property
+    def frame_map(self):
+        return {
+            i: functools.partial(self._distance_frame, i // 2)  # type: ignore
+            for i in range(2 * self.distance)
+        } | self.flatten_frame_map({
+            (2 * self.distance, int(2.5 * self.distance) + 4): functools.partial(self._distance_frame, self.distance, self.final_card_value),
+        })
+
 if __name__ == '__main__':
-    test_animation(ShuffleAnimation((10, 10), background=0))
+    test_animation(DrawAnimation((40, 15), background=0, direction=(3, 0), distance=10, final_card_value=CardValue.A))
